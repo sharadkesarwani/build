@@ -70,6 +70,7 @@ UP ?= up
 # 1: xpkg
 define xpkg.build.targets
 xpkg.build.$(1):
+	@go run github.com/official-providers-ci/cmd/cleanupexamples@latest $(XPKG_EXAMPLES_DIR) $(ROOT_DIR)/cleaned-examples || $(FAIL)
 	@$(INFO) Building package $(1)-$(VERSION).xpkg for $(PLATFORM)
 	@mkdir -p $(OUTPUT_DIR)/xpkg/$(PLATFORM)
 	@controller_arg=$$$$(grep -E '^kind:\s+Provider\s*$$$$' $(XPKG_DIR)/crossplane.yaml > /dev/null && echo "--controller $(BUILD_REGISTRY)/$(1)-$(ARCH)"); \
@@ -77,10 +78,11 @@ xpkg.build.$(1):
 		$$$${controller_arg} \
 		--package-root $(XPKG_DIR) \
 		--auth-ext $(XPKG_AUTH_EXT) \
-		--examples-root $(XPKG_EXAMPLES_DIR) \
+		--examples-root $(ROOT_DIR)/cleaned-examples \
 		--ignore $(XPKG_IGNORE) \
 		--output $(XPKG_OUTPUT_DIR)/$(PLATFORM)/$(1)-$(VERSION).xpkg || $(FAIL)
 	@$(OK) Built package $(1)-$(VERSION).xpkg for $(PLATFORM)
+	@rm -rf $(ROOT_DIR)/cleaned-examples
 xpkg.build: xpkg.build.$(1)
 endef
 $(foreach x,$(XPKGS),$(eval $(call xpkg.build.targets,$(x))))
