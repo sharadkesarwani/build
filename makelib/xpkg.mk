@@ -60,6 +60,7 @@ XPKG_ARCHS := $(subst linux_,,$(filter linux_%,$(PLATFORMS)))
 XPKG_PLATFORMS := $(subst _,/,$(subst $(SPACE),$(COMMA),$(filter linux_%,$(PLATFORMS))))
 XPKG_PLATFORMS_LIST := $(subst _,/,$(filter linux_%,$(PLATFORMS)))
 XPKG_PLATFORM := $(subst _,/,$(PLATFORM))
+XPKG_CLEANUP_EXAMPLES_VERSION ?= v0.12.1
 
 # TODO(negz): Update these targets to use the crossplane CLI, not up.
 UP ?= up
@@ -70,7 +71,8 @@ UP ?= up
 # 1: xpkg
 define xpkg.build.targets
 xpkg.build.$(1):
-	@go run github.com/official-providers-ci/cmd/cleanupexamples@latest $(XPKG_EXAMPLES_DIR) $(ROOT_DIR)/cleaned-examples || $(FAIL)
+	@rm -rf $(WORK_DIR)/xpkg-cleaned-examples
+	@GOOS=$(HOSTOS) GOARCH=$(TARGETARCH) go run github.com/upbound/uptest/cmd/cleanupexamples@$(XPKG_CLEANUP_EXAMPLES_VERSION) $(XPKG_EXAMPLES_DIR) $(WORK_DIR)/xpkg-cleaned-examples || $(FAIL)
 	@$(INFO) Building package $(1)-$(VERSION).xpkg for $(PLATFORM)
 	@mkdir -p $(OUTPUT_DIR)/xpkg/$(PLATFORM)
 	@controller_arg=$$$$(grep -E '^kind:\s+Provider\s*$$$$' $(XPKG_DIR)/crossplane.yaml > /dev/null && echo "--controller $(BUILD_REGISTRY)/$(1)-$(ARCH)"); \
@@ -78,11 +80,11 @@ xpkg.build.$(1):
 		$$$${controller_arg} \
 		--package-root $(XPKG_DIR) \
 		--auth-ext $(XPKG_AUTH_EXT) \
-		--examples-root $(ROOT_DIR)/cleaned-examples \
+		--examples-root $(WORK_DIR)/xpkg-cleaned-examples \
 		--ignore $(XPKG_IGNORE) \
 		--output $(XPKG_OUTPUT_DIR)/$(PLATFORM)/$(1)-$(VERSION).xpkg || $(FAIL)
 	@$(OK) Built package $(1)-$(VERSION).xpkg for $(PLATFORM)
-	@rm -rf $(ROOT_DIR)/cleaned-examples
+	@rm -rf $(WORK_DIR)/xpkg-cleaned-examples
 xpkg.build: xpkg.build.$(1)
 endef
 $(foreach x,$(XPKGS),$(eval $(call xpkg.build.targets,$(x))))
