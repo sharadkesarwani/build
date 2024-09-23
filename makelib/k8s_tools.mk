@@ -25,7 +25,7 @@ ISTIO_DOWNLOAD_TUPLE := osx-$(SAFEHOSTARCH)
 endif
 
 # the version of kcl to use
-KCL_VERSION ?= v0.9.5
+KCL_VERSION ?= v0.10.0
 KCL := $(TOOLS_HOST_DIR)/kcl-$(KCL_VERSION)
 
 # the version of kind to use
